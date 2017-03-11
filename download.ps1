@@ -112,7 +112,6 @@ param(
     )]
     [String]
     $DownloadFolder,
-
     [Parameter(
         Mandatory = $false,
         ParameterSetName='listOnly'
