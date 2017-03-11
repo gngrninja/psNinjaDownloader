@@ -106,7 +106,7 @@ param(
     [ValidateSet('html','csv','xml','all')]
     [String]
     $OutputType,    
-     [Parameter(
+    [Parameter(
         Mandatory = $false,
         ParameterSetName='downloads'
     )]
