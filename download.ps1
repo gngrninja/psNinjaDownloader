@@ -112,7 +112,8 @@ param(
     [ValidateSet('html','csv','xml','all')]
     [String]
     $OutputType,    
-    [Parameter(Mandatory = $false,
+    [Parameter(
+        Mandatory = $false,
         ParameterSetName='listOnly'
     )]
     [Switch]
