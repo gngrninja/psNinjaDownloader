@@ -99,22 +99,23 @@ param(
     )]
     [String]    
     $DownloadName,   
+    [Parameter(
+        Mandatory = $false,
+        ParameterSetName='downloads'
+    )]
     [ValidateSet('html','csv','xml','all')]
     [String]
     $OutputType,    
-    [Parameter(
-        Mandatory = $false,
-        ParameterSetName='listOnly'
-    )]
      [Parameter(
         Mandatory = $false,
         ParameterSetName='downloads'
     )]
     [String]
     $DownloadFolder,
+
     [Parameter(
         Mandatory = $false,
-        ParameterSetName='downloads'
+        ParameterSetName='listOnly'
     )]
     [Switch]
     $ListOnly
