@@ -171,6 +171,14 @@ if ([String]::IsNullOrEmpty($downloadFolder)) { #Begin if for downloadFolder not
 
 } #End if for downloadFolder
 
+if (!(Test-Path -Path $outputDir)) {
+
+    Write-Verbose "Creating output folder as it does not exist! [$scriptFolder\output]"
+
+    New-Item -ItemType Directory -Path $outputDir
+
+}
+
 #Empty array for our results, later
 [System.Collections.ArrayList]$resultsArray = @()
 
