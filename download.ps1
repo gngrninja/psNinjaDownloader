@@ -25,10 +25,10 @@
     Content (byte array, file contents)
     Success (boolean)
     Error (string, any error received)   
-.PARAMETER downloadName
+.PARAMETER DownloadName
     Argument: This is the name of the script you'd like to execute (use 'all' to execute all scripts)
     Scripts located in %scriptDir%\scripts       
-.PARAMETER outputType
+.PARAMETER OutputType
     Argument: This parameter affects the type of text you'd like to display.
 
     Valid types:
@@ -38,17 +38,25 @@
     All
 
     Results exported to %scriptDir%\output
-.PARAMETER downloadFolder
+.PARAMETER DownloadFolder
     Argument: The path you'd like to download the files to.
 
     Will use %scriptDir%\output if nothing is specified.
     If the directory does not exist, it will be created.
+.PARAMETER ListOnly
+    Returns a list of possible names and their script paths
 .NOTES   
     Name: download.ps1
     Author: Mike Roberts aka Ginger Ninja
     DateCreated: 3/10/2017
+.EXAMPLE
+    .\download.ps1
+        (or)
+    .\download.ps1 -listOnly:$true
+
+    Returns a list of possible names and their script paths
 .EXAMPLE   
-    .\download.ps1 -downloadName Chrome -outputType html
+    .\download.ps1 -DownloadName Chrome -OutputType html
     ---------------------------------------------------------------
 
     1. Script %scriptDir%\scripts\Chrome.ps1 executed
@@ -56,14 +64,14 @@
     3. Results exported to %scriptDir%\output as HTML
 
 .EXAMPLE   
-    .\download.ps1 -downloadName all -outputType all
+    .\download.ps1 -DownloadName all -OutputType all
     ---------------------------------------------------------------
 
     1. All scripts in %scriptDir%\scripts executed
     2. Files downloaded to %scriptDir%\downloads
     3. Results exported to %scriptDir%\output as HTML, XML, and CSV
 .EXAMPLE   
-    .\download.ps1 -downloadName all -outputType all -downloadFolder C:\temp\downloads
+    .\download.ps1 -DownloadName all -OutputType all -DownloadFolder C:\temp\downloads
     ---------------------------------------------------------------
 
     1. All scripts in %scriptDir%\scripts executed
@@ -85,16 +93,30 @@
 #>
 [cmdletbinding()]
 param(
-    [Parameter(Mandatory)]
+    [Parameter(
+        Mandatory = $true,
+        ParameterSetName='downloads'
+    )]
     [String]    
-    $downloadName,
-    [Parameter(Mandatory = $false)]
+    $DownloadName,
+    [Parameter(
+        Mandatory = $false,
+        ParameterSetName='downloads'
+    )]
     [String]
-    $downloadFolder,
-    [Parameter(Mandatory = $false)]
+    $DownloadFolder,
+    [Parameter(
+        Mandatory = $false,
+        ParameterSetName='downloads'
+    )]
     [ValidateSet('html','csv','xml','all')]
     [String]
-    $outputType
+    $OutputType,    
+    [Parameter(Mandatory = $false,
+        ParameterSetName='listOnly'
+    )]
+    [Switch]
+    $ListOnly
 )
 
 #Script setup
@@ -103,14 +125,38 @@ $scriptFolder  = Split-Path -Parent $MyInvocation.MyCommand.Path
 $pathToScripts = "$scriptFolder\scripts"
 $outputDir     = "$scriptFolder\output"
 
+#Check to see if $list is true
+if ($ListOnly -or [String]::IsNullOrEmpty($DownloadName)) {
+
+    $scriptList = Get-ChildItem -Path $pathToScripts | Where-Object {$_.Extension -eq '.ps1' -and $_.Name -notmatch '^template'}  
+
+    [System.Collections.ArrayList]$availableScripts = @()
+
+    ForEach ($file in $scriptList) {
+
+        $script = [PSCustomObject]@{
+
+            Name       = $file | Select-Object -ExpandProperty Name | ForEach-Object {$_.TrimEnd('.ps1')}
+            ScriptPath = $file.FullName   
+    
+        }     
+
+        $availableScripts.Add($script) | Out-Null
+
+    }
+
+    Return $availableScripts
+    
+}
+
 #If $downloadFolder is not specified, attempt to set it to scriptFolder\downloads (and creat if it doesn't exist)
-if ([String]::IsNullOrEmpty($downloadFolder)) { #Begin if for downloadFolder not being specified
+if ([String]::IsNullOrEmpty($DownloadFolder)) { #Begin if for downloadFolder not being specified
 
     if (Test-Path -Path "$scriptFolder\downloads") {
 
-        $downloadFolder = "$scriptFolder\downloads"
+        $DownloadFolder = "$scriptFolder\downloads"
 
-        Write-Verbose "No download folder specified, using [$downloadFolder]"
+        Write-Verbose "No download folder specified, using [$DownloadFolder]"
 
     } else {
 
@@ -120,9 +166,9 @@ if ([String]::IsNullOrEmpty($downloadFolder)) { #Begin if for downloadFolder not
         
             New-Item -ItemType Directory -Path "$scriptFolder\downloads" 
             
-            $downloadFolder = "$scriptFolder\downloads"
+            $DownloadFolder = "$scriptFolder\downloads"
 
-            Write-Verbose "Download folder [$downloadFolder] created!"
+            Write-Verbose "Download folder [$DownloadFolder] created!"
 
         
         }
@@ -140,19 +186,19 @@ if ([String]::IsNullOrEmpty($downloadFolder)) { #Begin if for downloadFolder not
     
 } else { #End if/begin else for downloadFolder not being specified
 
-    if (Test-Path -Path $downloadFolder) {
+    if (Test-Path -Path $DownloadFolder) {
 
-        Write-Verbose "Folder accessible! Using [$downloadFolder]"
+        Write-Verbose "Folder accessible! Using [$DownloadFolder]"
 
     } else {
 
-        Write-Verbose "Download folder doesn't exist [$downloadFolder], attempting to create!"
+        Write-Verbose "Download folder doesn't exist [$DownloadFolder], attempting to create!"
 
         Try {
         
-            New-Item -ItemType Directory -Path $downloadFolder            
+            New-Item -ItemType Directory -Path $DownloadFolder            
 
-            Write-Verbose "Download folder [$downloadFolder] created!"
+            Write-Verbose "Download folder [$DownloadFolder] created!"
 
         
         }
@@ -185,20 +231,20 @@ function Invoke-FileWrite { #Begin function Invoke-FileWrite
     [cmdletbinding()]
     param(
         [Parameter(Mandatory)]
-        $content,
+        $Content,
         [Parameter(Mandatory)]
         [String]
-        $localFolder,
+        $LocalFolder,
         [Parameter(Mandatory)]
         [string]
-        $fileName
+        $FileName
     )
 
     if (Test-Path $localFolder -ErrorAction SilentlyContinue) {
 
-        $localFullPath = "$localFolder\$fileName"
+        $localFullPath = "$LocalFolder\$FileName"
 
-        [io.file]::WriteAllBytes($localFullPath,$content)
+        [io.file]::WriteAllBytes($localFullPath,$Content)
 
         if (Test-Path $localFullPath -ErrorAction SilentlyContinue) {
         
@@ -217,7 +263,7 @@ function Invoke-FileWrite { #Begin function Invoke-FileWrite
 
             $returnObject = [PSCustomObject]@{
 
-                FileName        = $fileName
+                FileName        = $FileName
                 LocalPath       = $localFullPath
                 Error           = ''
                 VerifiedToExist = $false
@@ -234,9 +280,9 @@ function Invoke-FileWrite { #Begin function Invoke-FileWrite
 
         $returnObject = [PSCustomObject]@{
 
-                FileName        = $fileName
+                FileName        = $FileName
                 LocalPath       = $localFullPath
-                Error           = "Invoke-FileWrite -> Folder [$localFolder] inaccessible!" 
+                Error           = "Invoke-FileWrite -> Folder [$LocalFolder] inaccessible!" 
                 VerifiedToExist = $false
 
             }        
@@ -252,10 +298,10 @@ function Invoke-FileCheck { #Begin function Invoke-FileCheck
     param(
         [Parameter(Mandatory)]
         [String]
-        $downloadName
+        $DownloadName
     )
 
-    if ($downloadName -eq 'all') {
+    if ($DownloadName -eq 'all') {
 
         [System.Collections.ArrayList]$scriptInfo = @()
 
@@ -281,13 +327,13 @@ function Invoke-FileCheck { #Begin function Invoke-FileCheck
 
         $scriptInfo = [PSCustomObject]@{
 
-            ScriptName = "$downloadName.ps1"
-            ScriptPath = "$pathToScripts\$downloadName.ps1"
+            ScriptName = "$DownloadName.ps1"
+            ScriptPath = "$pathToScripts\$DownloadName.ps1"
             ScriptExists = $false
 
         }
 
-        Write-Verbose "Checking for script that matches [$downloadName]!"
+        Write-Verbose "Checking for script that matches [$DownloadName]!"
 
         If (Test-Path -Path $scriptInfo.ScriptPath) {
 
@@ -298,6 +344,7 @@ function Invoke-FileCheck { #Begin function Invoke-FileCheck
     }
     
     Return $scriptInfo
+
 } #End function Invoke-FileCheck
 
 function Invoke-CsvFormat { #Begin function Invoke-CsvFormat
@@ -308,10 +355,10 @@ function Invoke-CsvFormat { #Begin function Invoke-CsvFormat
             ValueFromPipeline = $true
         )]        
         [PSCustomObject]
-        $formattedResults
+        $FormattedResults
     )
 
-    $formattedResults | Export-Csv -Path ("$outputDir\download_results-{0:MMddyy_HHmm}.csv" -f (Get-Date)) -NoTypeInformation -Force
+    $FormattedResults | Export-Csv -Path ("$outputDir\download_results-{0:MMddyy_HHmm}.csv" -f (Get-Date)) -NoTypeInformation -Force
     
 } #End function Invoke-CsvFormat
 
@@ -320,7 +367,7 @@ function Invoke-HtmlFormat { #Begin function Invoke-HtmlFormat
     param(
         [Parameter(Mandatory)]
         [PSCustomObject]
-        $formattedResults
+        $FormattedResults
     )
 
     $style = @" 
@@ -332,12 +379,12 @@ TD{border-width: 2px;padding: 2px;border-style: dotted;border-color: black;backg
 </style>
 "@
        
-    $formattedResults | ConvertTo-HTML -head $style | Out-File -FilePath ("$outputDir\download_results-{0:MMddyy_HHmm}.html" -f (Get-Date))
+    $FormattedResults | ConvertTo-HTML -head $style | Out-File -FilePath ("$outputDir\download_results-{0:MMddyy_HHmm}.html" -f (Get-Date))
     
 } #End function Invoke-HtmlFormat
 
 #Script actions, starting with checking the downloadName parameter value
-$fileCheck = Invoke-FileCheck -downloadName $downloadName
+$fileCheck = Invoke-FileCheck -DownloadName $DownloadName
 
 foreach ($file in $fileCheck) { #Begin file/script foreach loop
 
@@ -374,7 +421,7 @@ foreach ($file in $fileCheck) { #Begin file/script foreach loop
 
         if ($getFile.Success) { #Begin successful download actions
 
-            $fileWriteResult = Invoke-FileWrite -content $getFile.Content -localFolder $downloadFolder -fileName $getFile.DownloadName
+            $fileWriteResult = Invoke-FileWrite -Content $getFile.Content -LocalFolder $DownloadFolder -FileName $getFile.DownloadName
 
             if ($fileWriteResult.Error) {
 
@@ -403,7 +450,7 @@ foreach ($file in $fileCheck) { #Begin file/script foreach loop
 
 } #End file/script foreach loop
 
-if ($outputType) { #Begin if for outputType existing
+if ($OutputType) { #Begin if for outputType existing
     
     [System.Collections.ArrayList]$formattedObjectArray = @()
     
@@ -429,13 +476,13 @@ if ($outputType) { #Begin if for outputType existing
 
 } #Enf if for outputType existing
 
-switch ($outputType) { #Begin outputType switch
+switch ($OutputType) { #Begin outputType switch
 
     'html' {
 
         Write-Verbose "Formatting HTML..."
 
-        Invoke-HTMLFormat -formattedResults $formattedObjectArray
+        Invoke-HTMLFormat -FormattedResults $formattedObjectArray
 
         Write-Verbose "HTML exported to [$outputDir]"
 
@@ -445,7 +492,7 @@ switch ($outputType) { #Begin outputType switch
 
         Write-Verbose "Formatting CSV..."
 
-        Invoke-CsvFormat -formattedResults $formattedObjectArray
+        Invoke-CsvFormat -FormattedResults $formattedObjectArray
 
         Write-Verbose "CSV exported to [$outputDir]"
 
@@ -465,8 +512,8 @@ switch ($outputType) { #Begin outputType switch
 
         Write-Verbose "Working on exporting as all formats (XML, CSV, and HTML)..."
         
-        Invoke-HTMLFormat -formattedResults $formattedObjectArray
-        Invoke-CsvFormat -formattedResults $formattedObjectArray
+        Invoke-HTMLFormat -FormattedResults $formattedObjectArray
+        Invoke-CsvFormat -FormattedResults $formattedObjectArray
         $resultsArray | Export-Clixml  -Path ("$outputDir\download_results-{0:MMddyy_HHmm}.xml" -f (Get-Date))
 
         Write-Verbose "All formats (XML, CSV, and HTML) exported to [$outputDir]"
