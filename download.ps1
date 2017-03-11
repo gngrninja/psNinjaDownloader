@@ -98,8 +98,15 @@ param(
         ParameterSetName='downloads'
     )]
     [String]    
-    $DownloadName,
+    $DownloadName,   
+    [ValidateSet('html','csv','xml','all')]
+    [String]
+    $OutputType,    
     [Parameter(
+        Mandatory = $false,
+        ParameterSetName='listOnly'
+    )]
+     [Parameter(
         Mandatory = $false,
         ParameterSetName='downloads'
     )]
@@ -108,13 +115,6 @@ param(
     [Parameter(
         Mandatory = $false,
         ParameterSetName='downloads'
-    )]
-    [ValidateSet('html','csv','xml','all')]
-    [String]
-    $OutputType,    
-    [Parameter(
-        Mandatory = $false,
-        ParameterSetName='listOnly'
     )]
     [Switch]
     $ListOnly
