@@ -26,7 +26,6 @@
     Success (boolean)
     Error (string, any error received)   
 .PARAMETER downloadName
-
     Argument: This is the name of the script you'd like to execute (use 'all' to execute all scripts)
     Scripts located in %scriptDir%\scripts       
 .PARAMETER outputType
