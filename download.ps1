@@ -93,7 +93,10 @@
         LocalPath (string, full path of file)                                                                             
         Error (string, any errors)
         VerifiedToExist (boolean, true if file exists)
-
+        ExtractionResults (A custom object that exists if a zip was extracted)
+            ExtractedTo (string, path contents were extracted to)
+            ExtractionSuccess (boolean, status of extraction)
+            Error (string, error message if any during extraction)        
 .LINK  
     http://www.gngrninja.com/script-ninja/2017/3/10/powershell-ninjadownloader-modular-file-download-utility  
 #>
