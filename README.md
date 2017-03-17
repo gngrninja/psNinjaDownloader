@@ -9,6 +9,7 @@ Get-Help .\download.ps1 -Full
 
 
 #-------------------------- EXAMPLE --------------------------
+
 PS C:\>.\download.ps1 -DownloadName all -OutputType all
 
 1. All scripts in %scriptDir%\scripts executed
@@ -17,6 +18,7 @@ PS C:\>.\download.ps1 -DownloadName all -OutputType all
 
 
 #-------------------------- EXAMPLE  --------------------------
+
 PS C:\>.\download.ps1 -DownloadName all -OutputType all -DownloadFolder C:\temp\downloads
 
 1. All scripts in %scriptDir%\scripts executed
