@@ -558,23 +558,28 @@ foreach ($file in $fileCheck) { #Begin file/script foreach loop
 
 } #End file/script foreach loop
 
-if ($UnZip) {
+if ($UnZip) { #Begin UnZip actions
 
     Write-Verbose "Looking through downloads, and extracting any zips..."
 
-    foreach ($result in $resultsArray) {
+    foreach ($result in $resultsArray) { #Begin foreach to iterate through results
 
-        if ($result.FileInfo.FileName.Substring($result.FileInfo.FileName.LastIndexOf('.')+1) -eq 'zip') {
+        if ($result.Success) { #Only unzip successful results
 
-            $extractionResults = Invoke-FileExtraction $result                    
+            #This is to ensure we only target files with .zip extensions
+            if ($result.FileInfo.FileName.Substring($result.FileInfo.FileName.LastIndexOf('.')+1) -eq 'zip') {
 
-            $result.FileInfo | Add-Member -MemberType NoteProperty -Name 'ExtractionResults' -Value $extractionResults
+                $extractionResults = Invoke-FileExtraction $result                    
 
-        }
+                $result.FileInfo | Add-Member -MemberType NoteProperty -Name 'ExtractionResults' -Value $extractionResults
 
-    }
+            }
 
-}
+        } # End success if
+
+    } #End results foreach 
+
+} #End UnZip actions
 
 if ($OutputType) { #Begin if for outputType existing
     
