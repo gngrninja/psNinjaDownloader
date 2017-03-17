@@ -8,7 +8,7 @@ You can also use the following command to get started:
 Get-Help .\download.ps1 -Full
 
 
-#-------------------------- EXAMPLE --------------------------
+# -------------------------- EXAMPLE --------------------------
 
 PS C:\>.\download.ps1 -DownloadName all -OutputType all
 
@@ -17,7 +17,7 @@ PS C:\>.\download.ps1 -DownloadName all -OutputType all
 3. Results exported to %scriptDir%\output as HTML, XML, and CSV
 
 
-#-------------------------- EXAMPLE  --------------------------
+# -------------------------- EXAMPLE  --------------------------
 
 PS C:\>.\download.ps1 -DownloadName all -OutputType all -DownloadFolder C:\temp\downloads
 
