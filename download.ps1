@@ -582,7 +582,7 @@ if ($OutputType) { #Begin if for outputType existing
     
     foreach ($result in $resultsArray)  {
 
-        Write-Verbose "Working with [$result]"
+        Write-Verbose "Working with [$($result.FileInfo.FileName)]"
         
         $formattedObject = $null
         $formattedObject = [PSCustomObject]@{
