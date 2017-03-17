@@ -33,7 +33,7 @@
 
     Valid types:
     XML
-    CSV
+    CSV (default)
     HTML
     All
 
@@ -43,6 +43,12 @@
 
     Will use %scriptDir%\output if nothing is specified.
     If the directory does not exist, it will be created.
+.PARAMETER UnZip
+    Argument: This is a switch, flag if you want to use it
+
+    This switch will look for any files that are zip files, and unzip them.
+    The contents will go to a folder created in the downloads folder, which will
+    have the name of the file downloaded.
 .PARAMETER ListOnly
     Returns a list of possible names and their script paths
 .NOTES   
@@ -91,6 +97,7 @@
 .LINK  
     http://www.gngrninja.com/script-ninja/2017/3/10/powershell-ninjadownloader-modular-file-download-utility  
 #>
+#Requires -Version 3.0
 [cmdletbinding()]
 param(
     [Parameter(
@@ -105,13 +112,19 @@ param(
     )]
     [ValidateSet('html','csv','xml','all')]
     [String]
-    $OutputType,    
+    $OutputType = 'csv',    
     [Parameter(
         Mandatory = $false,
         ParameterSetName='downloads'
     )]
     [String]
     $DownloadFolder,
+    [Parameter(
+        Mandatory = $false,
+        ParameterSetName='downloads'
+    )]
+    [Switch]
+    $UnZip,
     [Parameter(
         Mandatory = $false,
         ParameterSetName='listOnly'
@@ -384,6 +397,100 @@ TD{border-width: 2px;padding: 2px;border-style: dotted;border-color: black;backg
     
 } #End function Invoke-HtmlFormat
 
+function Invoke-FileExtraction { #Begin function Invoke-FileExtraction
+    [cmdletbinding()]
+    param (
+        [Parameter(
+            Mandatory
+        )]
+        $DownloadInfo
+    )
+
+    Begin {
+
+        $proceed     = $false
+        $zipAssembly = "System.IO.Compression.FileSystem"
+        $assemblies  = [System.AppDomain]::CurrentDomain.GetAssemblies()
+        $reason      = "Unable to load assembly!"
+
+        if ($assemblies | Where-Object {$_.FullName -match $name}) {
+
+            Add-Type -AssemblyName $zipAssembly
+            $proceed = $true
+
+        }
+
+        if ($proceed -and !($DownloadInfo.FileInfo.FileName.SubString($DownloadInfo.FileInfo.FileName.LastIndexOf('.')+ 1) -eq 'zip')) {
+
+            $proceed = $false 
+            $reason = "No zip file found!"
+
+        }        
+
+        $returnObject = [PSCustomObject]@{
+
+            ExtractedTo       = ''
+            ExtractionSuccess = $false
+            Error             = ''
+
+        }
+
+    }
+   
+    Process {
+
+        if ($proceed) {
+
+            foreach ($download in $DownloadInfo) {
+
+                if ($download.Success) {
+
+                    $extractTo   = $null
+                    $extractFrom = $null
+
+                    $extractFrom = $download.FileInfo.LocalPath
+                    $extractTo   = "$($extractFrom.Substring(0,$extractFrom.LastIndexOf('.')))_{0:HHmm-MMddyy}" -f (Get-Date)
+
+                    Write-Verbose "Attempting to extract [$extractFrom] -> [$extractTo]"
+                    
+                    Try {
+                    
+                        [IO.Compression.ZipFile]::ExtractToDirectory($extractFrom, $extractTo)
+                        
+                        $returnObject.ExtractionSuccess = $true
+                        $returnObject.ExtractedTo       = $extractTo
+
+                    }
+                    Catch {
+
+                        $errorMessage = $_.Exception.Message
+
+                        Write-Error "[$errorMessage]"
+
+                        $returnObject.Error = $errorMessage
+
+                    }                    
+
+                }
+
+            }
+
+        } else {
+
+            Write-Error "[$reason]"
+            
+        }
+
+    }
+
+    End {
+
+        Return $returnObject
+
+    }
+
+} #End function Invoke-FileExtraction
+
 #Script actions, starting with checking the downloadName parameter value
 $fileCheck = Invoke-FileCheck -DownloadName $DownloadName
 
@@ -451,6 +558,24 @@ foreach ($file in $fileCheck) { #Begin file/script foreach loop
 
 } #End file/script foreach loop
 
+if ($UnZip) {
+
+    Write-Verbose "Looking through downloads, and extracting any zips..."
+
+    foreach ($result in $resultsArray) {
+
+        if ($result.FileInfo.FileName.Substring($result.FileInfo.FileName.LastIndexOf('.')+1) -eq 'zip') {
+
+            $extractionResults = Invoke-FileExtraction $result                    
+
+            $result.FileInfo | Add-Member -MemberType NoteProperty -Name 'ExtractionResults' -Value $extractionResults
+
+        }
+
+    }
+
+}
+
 if ($OutputType) { #Begin if for outputType existing
     
     [System.Collections.ArrayList]$formattedObjectArray = @()
@@ -471,6 +596,13 @@ if ($OutputType) { #Begin if for outputType existing
 
         }                
 
+        if ($result.FileInfo.ExtractionResults) {
+
+            $formattedObject | Add-Member -MemberType NoteProperty -Name 'ExtractedTo'       -Value $result.FileInfo.ExtractionResults.ExtractedTo
+            $formattedObject | Add-Member -MemberType NoteProperty -Name 'ExtractionSuccess' -Value $result.FileInfo.ExtractionResults.ExtractionSuccess
+            $formattedObject | Add-Member -MemberType NoteProperty -Name 'ExtractionError'   -Value $result.FileInfo.ExtractionResults.Error
+
+        }
         $formattedObjectArray.Add($formattedObject) | Out-Null
         
     }        
