@@ -552,7 +552,7 @@ foreach ($file in $fileCheck) { #Begin file/script foreach loop
 
     }
     
-    Write-Verbose "Adding result for [$($getFile.DownloadName) to results array!]"
+    Write-Verbose "Adding result for [$($getFile.DownloadName)] to results array!"
 
     $resultsArray.Add($result) | Out-Null
 
@@ -608,6 +608,7 @@ if ($OutputType) { #Begin if for outputType existing
             $formattedObject | Add-Member -MemberType NoteProperty -Name 'ExtractionError'   -Value $result.FileInfo.ExtractionResults.Error
 
         }
+
         $formattedObjectArray.Add($formattedObject) | Out-Null
         
     }        
